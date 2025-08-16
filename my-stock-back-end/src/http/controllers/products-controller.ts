@@ -16,6 +16,18 @@ const productBodySchema = z.object({
     .min(0, 'Quantidade deve ser um número inteiro não negativo'),
 })
 
+// Schema para atualização (campos opcionais)
+const productUpdateSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório').optional(),
+  description: z.string().optional(),
+  price: z.number().positive('Preço deve ser maior que zero').optional(),
+  quantity: z
+    .number()
+    .int()
+    .min(0, 'Quantidade deve ser um número inteiro não negativo')
+    .optional(),
+})
+
 const productParamsSchema = z.object({
   id: z.uuid('ID deve ser um UUID válido'),
 })
@@ -87,6 +99,42 @@ export async function getProductById(
     }
 
     return reply.status(200).send(product)
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return reply.status(400).send({
+        message: 'Dados inválidos',
+      })
+    }
+  }
+}
+
+export async function updateProduct(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  try {
+    const { id } = productParamsSchema.parse(request.params)
+    const updateData = productUpdateSchema.parse(request.body)
+
+    const existingProduct = await prisma.product.findUnique({
+      where: { id },
+    })
+
+    if (!existingProduct) {
+      return reply.status(404).send({
+        message: 'Produto não encontrado',
+      })
+    }
+
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data: updateData,
+    })
+
+    return reply.status(200).send({
+      updatedProduct,
+      message: 'Produto atualizado com sucesso',
+    })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return reply.status(400).send({
