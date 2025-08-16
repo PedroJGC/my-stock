@@ -1,12 +1,12 @@
 import { app } from '@/app'
 import {
-  create,
-  listProductById,
+  createProduct,
+  getProductById,
   listProducts,
 } from './controllers/products-controller'
 
 export async function appRoutes() {
-  app.post('/products', create)
+  app.post('/products', createProduct)
   app.get('/products', listProducts)
-  app.get('/products/:id', listProductById)
+  app.get('/products/:id', getProductById)
 }

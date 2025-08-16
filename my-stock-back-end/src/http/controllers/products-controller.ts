@@ -20,7 +20,10 @@ const productParamsSchema = z.object({
   id: z.uuid('ID deve ser um UUID válido'),
 })
 
-export async function create(request: FastifyRequest, reply: FastifyReply) {
+export async function createProduct(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
   // Validar os dados recebidos
   const { name, description, price, quantity } = productBodySchema.parse(
     request.body
@@ -66,7 +69,7 @@ export async function listProducts(
   }
 }
 
-export async function listProductById(
+export async function getProductById(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
