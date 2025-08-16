@@ -1,6 +1,7 @@
 import { app } from '@/app'
 import {
   createProduct,
+  deleteProduct,
   getProductById,
   listProducts,
   updateProduct,
@@ -11,4 +12,5 @@ export async function appRoutes() {
   app.get('/products', listProducts)
   app.get('/products/:id', getProductById)
   app.put('/products/:id', updateProduct)
+  app.delete('/products/:id', deleteProduct)
 }

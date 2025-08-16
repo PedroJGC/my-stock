@@ -143,3 +143,36 @@ export async function updateProduct(
     }
   }
 }
+
+export async function deleteProduct(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  try {
+    const { id } = productParamsSchema.parse(request.params)
+
+    const existingProduct = await prisma.product.findUnique({
+      where: { id },
+    })
+
+    if (!existingProduct) {
+      return reply.status(404).send({
+        message: 'Produto não encontrado',
+      })
+    }
+
+    await prisma.product.delete({
+      where: { id },
+    })
+
+    return reply.status(200).send({
+      message: 'Produto excluído com sucesso',
+    })
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return reply.status(400).send({
+        message: 'Dados inválidos',
+      })
+    }
+  }
+}
