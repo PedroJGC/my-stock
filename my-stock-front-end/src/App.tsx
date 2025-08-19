@@ -1,5 +1,5 @@
-function App() {
-  return <h1>Hello</h1>
-}
+import { ProductsPage } from './pages/ProductsPage'
 
-export default App
+export default function App() {
+  return <ProductsPage />
+}
