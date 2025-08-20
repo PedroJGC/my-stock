@@ -1,7 +1,12 @@
 /** biome-ignore-all lint/style/useBlockStatements: ignore */
 import { apiClient } from '../client'
 import { API_CONFIG } from '../config'
-import type { CreateProductData, Product, UpdateProductData } from '../types'
+import type {
+  CreateProductData,
+  Product,
+  SearchParams,
+  UpdateProductData,
+} from '../types'
 import {
   createCacheKey,
   getFromCache,
@@ -120,4 +125,71 @@ export async function deleteProduct(id: string): Promise<{ message: string }> {
     console.error('Erro ao deletar produto:', error)
     throw error
   }
+}
+
+// Search products with filters
+export async function searchProducts(params: SearchParams): Promise<Product[]> {
+  const cacheParams: Record<string, unknown> = {}
+  if (params.page) cacheParams.page = params.page
+  if (params.limit) cacheParams.limit = params.limit
+  if (params.search) cacheParams.search = params.search
+  if (params.sortBy) cacheParams.sortBy = params.sortBy
+  if (params.sortOrder) cacheParams.sortOrder = params.sortOrder
+  const cacheKey = createCacheKey(API_CONFIG.endpoints.products, cacheParams)
+
+  const cached = getFromCache<Product[]>(cacheKey)
+  if (cached) return cached
+
+  try {
+    // Convert SearchParams to Record<string, string>
+    const queryParams: Record<string, string> = {}
+    if (params.page) queryParams.page = params.page.toString()
+    if (params.limit) queryParams.limit = params.limit.toString()
+    if (params.search) queryParams.search = params.search
+    if (params.sortBy) queryParams.sortBy = params.sortBy
+    if (params.sortOrder) queryParams.sortOrder = params.sortOrder
+
+    const products = await withRetry<Product[]>(() =>
+      apiClient.get(API_CONFIG.endpoints.products, queryParams)
+    )
+
+    saveToCache(cacheKey, products)
+    return products
+  } catch (error) {
+    console.error('Erro ao buscar produtos com filtros:', error)
+    throw error
+  }
+}
+
+// Check if product exists
+export async function productExists(id: string): Promise<boolean> {
+  try {
+    await getProductById(id)
+    return true
+  } catch {
+    return false
+  }
+}
+
+// Count products
+export async function countProducts(): Promise<number> {
+  try {
+    const products = await getAllProducts()
+    return products.length
+  } catch {
+    console.error('Erro ao contar produtos')
+    return 0
+  }
+}
+
+// Object with all product endpoints
+export const productsEndpoints = {
+  getAll: getAllProducts,
+  getById: getProductById,
+  create: createProduct,
+  update: updateProduct,
+  delete: deleteProduct,
+  search: searchProducts,
+  exists: productExists,
+  count: countProducts,
 }

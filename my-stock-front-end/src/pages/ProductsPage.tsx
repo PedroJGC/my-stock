@@ -1,7 +1,7 @@
 // src/pages/ProductsPage.tsx - Usando a nova API funcional
 
 import { Edit, Plus, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useState } from 'react'
 // Importar a nova API
 import {
   ApiError,
@@ -29,8 +29,13 @@ export function ProductsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Gerar IDs únicos para acessibilidade
+  const errorIconId = useId()
+  const emptyBoxIconId = useId()
+  const emptyProductsIconId = useId()
+
   // Buscar produtos da API
-  async function fetchProducts() {
+  const fetchProducts = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -49,12 +54,12 @@ export function ProductsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   // Carregar produtos no mount do componente
   useEffect(() => {
     fetchProducts()
-  }, [])
+  }, [fetchProducts])
 
   // Função para editar produto
   function handleEdit(productId: string) {
@@ -141,7 +146,10 @@ export function ProductsPage() {
                 className="h-5 w-5 text-red-400"
                 viewBox="0 0 20 20"
                 fill="currentColor"
+                role="img"
+                aria-labelledby={errorIconId}
               >
+                <title id={errorIconId}>Ícone de erro</title>
                 <path
                   fillRule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
@@ -190,7 +198,10 @@ export function ProductsPage() {
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                role="img"
+                aria-labelledby={emptyBoxIconId}
               >
+                <title id={emptyBoxIconId}>Ícone de caixa vazia</title>
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -289,7 +300,12 @@ export function ProductsPage() {
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
+                      role="img"
+                      aria-labelledby={emptyProductsIconId}
                     >
+                      <title id={emptyProductsIconId}>
+                        Ícone de produtos vazio
+                      </title>
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
