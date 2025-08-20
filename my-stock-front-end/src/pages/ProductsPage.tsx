@@ -27,14 +27,7 @@ export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
-  // TODO: Implementar busca dos produtos da API
   useEffect(() => {
-    // Aqui você fará a requisição para sua API
-    // fetch('http://localhost:3333/products')
-    //   .then(res => res.json())
-    //   .then(data => setProducts(data))
-    //   .finally(() => setLoading(false))
-
     // Dados mockados para exemplo
     setProducts([
       {
