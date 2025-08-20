@@ -1,0 +1,123 @@
+/** biome-ignore-all lint/style/useBlockStatements: ignore */
+import { apiClient } from '../client'
+import { API_CONFIG } from '../config'
+import type { CreateProductData, Product, UpdateProductData } from '../types'
+import {
+  createCacheKey,
+  getFromCache,
+  saveToCache,
+  validateProductData,
+  withRetry,
+} from '../utils'
+
+// Search all products
+export async function getAllProducts(): Promise<Product[]> {
+  const cacheKey = createCacheKey(API_CONFIG.endpoints.products)
+
+  const cached = getFromCache<Product[]>(cacheKey)
+  if (cached) return cached
+
+  try {
+    const products = await withRetry<Product[]>(() =>
+      apiClient.get(API_CONFIG.endpoints.products)
+    )
+
+    saveToCache(cacheKey, products)
+    return products
+  } catch (error) {
+    console.error('Erro ao buscar produtos:', error)
+    throw error
+  }
+}
+
+// Search products by ID
+export async function getProductById(id: string): Promise<Product> {
+  const cacheKey = createCacheKey(`${API_CONFIG.endpoints.products}/${id}`)
+
+  const cached = getFromCache<Product>(cacheKey)
+  if (cached) return cached
+
+  try {
+    const product = await withRetry<Product>(() =>
+      apiClient.get(`${API_CONFIG.endpoints.products}/${id}`)
+    )
+
+    saveToCache(cacheKey, product)
+    return product
+  } catch (error) {
+    console.error('Erro ao buscar produto:', error)
+    throw error
+  }
+}
+
+// Create new product
+export async function createProduct(
+  data: CreateProductData
+): Promise<{ message: string }> {
+  if (!validateProductData(data)) {
+    throw new Error('Dados do produto são inválidos')
+  }
+
+  try {
+    const result = await withRetry(() =>
+      apiClient.post<{ message: string }>(API_CONFIG.endpoints.products, data)
+    )
+
+    const cacheKey = createCacheKey(API_CONFIG.endpoints.products)
+    const cache = new Map()
+    cache.delete(cacheKey)
+
+    return result
+  } catch (error) {
+    console.error('Erro ao criar produto:', error)
+    throw error
+  }
+}
+
+// Update product
+export async function updateProduct(
+  id: string,
+  data: UpdateProductData
+): Promise<{ updatedProduct: Product; message: string }> {
+  if (!validateProductData(data)) {
+    throw new Error('Dados do produto são inválidos')
+  }
+
+  try {
+    const result = await withRetry(() =>
+      apiClient.put<{ updatedProduct: Product; message: string }>(
+        `${API_CONFIG.endpoints.products}/${id}`,
+        data
+      )
+    )
+
+    const cache = new Map()
+    cache.delete(createCacheKey(`${API_CONFIG.endpoints.products}/${id}`))
+    cache.delete(createCacheKey(API_CONFIG.endpoints.products))
+
+    return result
+  } catch (error) {
+    console.error('Erro ao atualizar produto:', error)
+    throw error
+  }
+}
+
+// Delete product
+export async function deleteProduct(id: string): Promise<{ message: string }> {
+  try {
+    const result = await withRetry(() =>
+      apiClient.delete<{ message: string }>(
+        `${API_CONFIG.endpoints.products}/${id}`
+      )
+    )
+
+    const cache = new Map()
+    cache.delete(createCacheKey(`${API_CONFIG.endpoints.products}/${id}`))
+    cache.delete(createCacheKey(API_CONFIG.endpoints.products))
+
+    return result
+  } catch (error) {
+    console.error('Erro ao deletar produto:', error)
+    throw error
+  }
+}
