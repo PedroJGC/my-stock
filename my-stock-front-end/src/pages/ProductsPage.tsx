@@ -12,6 +12,7 @@ import {
   NetworkError,
   type Product,
 } from '@/api/endpoints'
+import { CreateProductModal } from '@/components/CreateProductModal'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -28,6 +29,7 @@ export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   // Gerar IDs únicos para acessibilidade
   const errorIconId = useId()
@@ -96,8 +98,7 @@ export function ProductsPage() {
   // Função para adicionar produto
   function handleAddProduct() {
     console.log('Adicionar novo produto')
-    // TODO: Implementar modal de criação
-    // Você pode usar createProduct da API aqui
+    setIsCreateModalOpen(true)
   }
 
   // Função para obter badge de status do estoque
@@ -365,6 +366,7 @@ export function ProductsPage() {
           </TableBody>
         </Table>
       </div>
+      <CreateProductModal open={isCreateModalOpen} />
     </div>
   )
 }
