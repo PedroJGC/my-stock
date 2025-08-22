@@ -1,4 +1,4 @@
-// src/pages/ProductsPage.tsx - Usando a nova API funcional
+// src/pages/ProductsPage.tsx - Integrada com CreateProductModal
 
 import { Edit, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useId, useState } from 'react'
@@ -95,10 +95,15 @@ export function ProductsPage() {
     }
   }
 
-  // Função para adicionar produto
+  // Função para abrir modal de criação
   function handleAddProduct() {
-    console.log('Adicionar novo produto')
     setIsCreateModalOpen(true)
+  }
+
+  // Função chamada quando produto é criado com sucesso
+  function handleProductCreated() {
+    // Recarregar a lista de produtos
+    fetchProducts()
   }
 
   // Função para obter badge de status do estoque
@@ -215,6 +220,10 @@ export function ProductsPage() {
               Nenhum produto encontrado
             </h3>
             <p>Comece adicionando seu primeiro produto.</p>
+            <Button onClick={handleAddProduct} className="mt-4">
+              <Plus className="w-4 h-4 mr-2" />
+              Adicionar Primeiro Produto
+            </Button>
           </div>
         ) : (
           products.map((product) => (
@@ -321,6 +330,10 @@ export function ProductsPage() {
                       <p className="text-sm text-muted-foreground mt-1">
                         Comece adicionando seu primeiro produto.
                       </p>
+                      <Button onClick={handleAddProduct} className="mt-4">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Adicionar Primeiro Produto
+                      </Button>
                     </div>
                   </div>
                 </TableCell>
@@ -366,7 +379,13 @@ export function ProductsPage() {
           </TableBody>
         </Table>
       </div>
-      <CreateProductModal open={isCreateModalOpen} />
+
+      {/* Modal de Criação */}
+      <CreateProductModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onSuccess={handleProductCreated}
+      />
     </div>
   )
 }

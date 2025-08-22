@@ -4,10 +4,16 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { createProduct } from '@/api/endpoints'
+import type { CreateProductData } from '@/api/types'
+import { Input, Textarea } from './Input'
+import { Label } from './Label'
+import { Button } from './ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from './ui/dialog'
@@ -80,6 +86,45 @@ export function CreateProductModal({
     }
   }, [open, reset, clearErrors])
 
+  const onSubmit = async (data: CreateProductFormData) => {
+    try {
+      setIsSubmitting(true)
+
+      const productData: CreateProductData = {
+        name: data.name.trim(),
+        description: data.description?.trim() || undefined,
+        price: Number(data.price),
+        quantity: Number(data.quantity),
+      }
+
+      await createProduct(productData)
+
+      onOpenChange(false)
+      onSuccess?.()
+
+      alert('Produto criado com sucesso!')
+    } catch (error) {
+      console.error('Erro ao criar produto:', error)
+
+      // Mostrar mensagem de erro (você pode substituir por um toast)
+      if (error instanceof Error) {
+        alert(`Erro ao criar produto: ${error.message}`)
+      } else {
+        alert('Erro desconhecido ao criar produto')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleCancel = () => {
+    if (isSubmitting) {
+      return
+    }
+
+    onOpenChange(false)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-gray-400">
@@ -90,16 +135,16 @@ export function CreateProductModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Product name */}
           <div>
-            <label
+            <Label
               htmlFor="name"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
               Produto
-            </label>
-            <input
+            </Label>
+            <Input
               {...register('name')}
               type="text"
               id="name"
@@ -111,13 +156,13 @@ export function CreateProductModal({
 
           {/* Product description */}
           <div>
-            <label
+            <Label
               htmlFor="description"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
               Descrição
-            </label>
-            <textarea
+            </Label>
+            <Textarea
               {...register('description')}
               id="description"
               rows={3}
@@ -136,13 +181,13 @@ export function CreateProductModal({
           <div className="grid grid-cols-2 gap-4">
             {/* Price */}
             <div>
-              <label
+              <Label
                 htmlFor="price"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
                 Preço
-              </label>
-              <input
+              </Label>
+              <Input
                 {...register('price', { valueAsNumber: true })}
                 type="text"
                 id="price"
@@ -172,13 +217,13 @@ export function CreateProductModal({
 
             {/* Quantity */}
             <div>
-              <label
+              <Label
                 htmlFor="quantity"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
                 Quantidade
-              </label>
-              <input
+              </Label>
+              <Input
                 {...register('quantity', { valueAsNumber: true })}
                 type="number"
                 id="quantity"
@@ -202,6 +247,27 @@ export function CreateProductModal({
               )}
             </div>
           </div>
+
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 space-y-2 space-y-reverse sm:space-y-0 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  Criando...
+                </>
+              ) : (
+                'Criar Produto'
+              )}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
