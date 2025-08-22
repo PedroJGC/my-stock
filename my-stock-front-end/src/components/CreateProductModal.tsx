@@ -71,7 +71,7 @@ export function CreateProductModal({
     defaultValues: {
       name: '',
       description: '',
-      price: undefined,
+      price: 0,
       quantity: 0,
     },
   })
@@ -127,7 +127,7 @@ export function CreateProductModal({
 
     if (onlyDigits === '') {
       setPriceInput('')
-      setValue('price', undefined as any, { shouldValidate: true })
+      setValue('price', 0, { shouldValidate: true })
       return
     }
 
@@ -164,6 +164,9 @@ export function CreateProductModal({
               placeholder="Digite o nome do produto"
               disabled={isSubmitting}
             />
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+            )}
           </div>
 
           {/* Product description */}
@@ -200,7 +203,6 @@ export function CreateProductModal({
                 Preço
               </Label>
               <Input
-                {...register('price', { valueAsNumber: true })}
                 type="text"
                 id="price"
                 inputMode="decimal"
