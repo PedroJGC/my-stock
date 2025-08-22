@@ -25,6 +25,7 @@ export function createApiClient(config: Partial<ApiConfig> = {}) {
     const merged: RequestInit = {
       headers: {
         ...currentConfig.headers,
+        ...(options.body && { 'Content-Type': 'application/json' }),
         ...options.headers,
       },
       signal: controller.signal,
