@@ -10,6 +10,7 @@ import {
   type Product,
 } from '@/api/endpoints'
 import { CreateProductModal } from '@/components/CreateProductModal'
+import { UpdateProductModal } from '@/components/UpdateProductModal'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -23,15 +24,22 @@ import {
 } from '@/components/ui/table'
 
 export function ProductsPage() {
+  // Estados para produtos e loading
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
+  // Estados para modais
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+
+  // IDs para acessibilidade
   const errorIconId = useId()
   const emptyBoxIconId = useId()
   const emptyProductsIconId = useId()
 
+  // Função para buscar produtos
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true)
@@ -53,30 +61,37 @@ export function ProductsPage() {
     }
   }, [])
 
+  // Carregar produtos na inicialização
   useEffect(() => {
     fetchProducts()
   }, [fetchProducts])
 
-  function handleEdit(productId: string) {
-    console.log('Editar produto:', productId)
-    // TODO: Implementar modal de edição
-    // Você pode usar updateProduct da API aqui
+  // Handlers para ações
+  const handleCreateProduct = () => {
+    setIsCreateModalOpen(true)
   }
 
-  // Função para deletar produto
-  async function handleDelete(productId: string) {
-    if (!confirm('Tem certeza que deseja deletar este produto?')) {
+  const handleEditProduct = (product: Product) => {
+    setSelectedProduct(product)
+    setIsUpdateModalOpen(true)
+  }
+
+  const handleDeleteProduct = async (
+    productId: string,
+    productName: string
+  ) => {
+    const confirmMessage = `Tem certeza que deseja deletar o produto "${productName}"?`
+    if (!confirm(confirmMessage)) {
       return
     }
 
     try {
       await deleteProduct(productId)
 
-      // Remover produto da lista local (atualização otimista)
+      // Atualização otimista - remover da lista local
       setProducts((prev) => prev.filter((p) => p.id !== productId))
 
       console.log('Produto deletado com sucesso')
-      // TODO: Mostrar toast de sucesso
     } catch (err) {
       console.error('Erro ao deletar produto:', err)
 
@@ -85,27 +100,32 @@ export function ProductsPage() {
       } else {
         alert('Erro desconhecido ao deletar produto')
       }
-    }
-  }
 
-  function handleAddProduct() {
-    setIsCreateModalOpen(true)
-  }
-
-  async function handleProductCreated() {
-    try {
-      setLoading(true)
-      const data = await getAllProducts()
-      setProducts(data)
-    } catch (err) {
-      console.error('Erro ao recarregar produtos após criação:', err)
+      // Em caso de erro, recarregar a lista
       fetchProducts()
-    } finally {
-      setLoading(false)
     }
   }
 
-  function getStockBadge(quantity: number) {
+  // Handlers para sucesso dos modais
+  const handleProductCreated = () => {
+    fetchProducts()
+  }
+
+  const handleProductUpdated = () => {
+    fetchProducts()
+    setSelectedProduct(null)
+  }
+
+  // Handler para fechar modal de edição
+  const handleCloseUpdateModal = (open: boolean) => {
+    setIsUpdateModalOpen(open)
+    if (!open) {
+      setSelectedProduct(null)
+    }
+  }
+
+  // Função para gerar badge de status do estoque
+  const getStockBadge = (quantity: number) => {
     if (quantity === 0) {
       return (
         <Badge className="bg-red-500 hover:bg-red-600 text-white border-red-500">
@@ -127,17 +147,19 @@ export function ProductsPage() {
     )
   }
 
+  // Estado de loading
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center">
         <div className="text-center">
-          <p className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
           <p>Carregando produtos...</p>
         </div>
       </div>
     )
   }
 
+  // Estado de erro
   if (error) {
     return (
       <div className="p-6">
@@ -178,19 +200,21 @@ export function ProductsPage() {
     )
   }
 
+  // Renderização principal
   return (
     <div className="p-4">
+      {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <h1 className="text-xl sm:text-2xl font-bold text-center sm:text-left">
           Gerenciar Produtos
         </h1>
-        <Button onClick={handleAddProduct} className="w-full sm:w-auto">
+        <Button onClick={handleCreateProduct} className="w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
           Adicionar Produto
         </Button>
       </div>
 
-      {/* Cards - Visível apenas em mobile */}
+      {/* Cards para mobile */}
       <div className="block md:hidden space-y-4">
         {products.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
@@ -216,7 +240,7 @@ export function ProductsPage() {
               Nenhum produto encontrado
             </h3>
             <p>Comece adicionando seu primeiro produto.</p>
-            <Button onClick={handleAddProduct} className="mt-4">
+            <Button onClick={handleCreateProduct} className="mt-4">
               <Plus className="w-4 h-4 mr-2" />
               Adicionar Primeiro Produto
             </Button>
@@ -252,18 +276,20 @@ export function ProductsPage() {
 
                 <div className="flex gap-2">
                   <Button
-                    className="cursor-pointer"
                     variant="outline"
                     size="sm"
-                    onClick={() => handleEdit(product.id)}
+                    onClick={() => handleEditProduct(product)}
+                    title="Editar produto"
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
                   <Button
-                    className="cursor-pointer"
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDelete(product.id)}
+                    onClick={() =>
+                      handleDeleteProduct(product.id, product.name)
+                    }
+                    title="Deletar produto"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -274,7 +300,7 @@ export function ProductsPage() {
         )}
       </div>
 
-      {/* Tabela - Visível apenas em desktop */}
+      {/* Tabela para desktop */}
       <div className="hidden md:block">
         <Table>
           <TableCaption>
@@ -326,7 +352,7 @@ export function ProductsPage() {
                       <p className="text-sm text-muted-foreground mt-1">
                         Comece adicionando seu primeiro produto.
                       </p>
-                      <Button onClick={handleAddProduct} className="mt-4">
+                      <Button onClick={handleCreateProduct} className="mt-4">
                         <Plus className="w-4 h-4 mr-2" />
                         Adicionar Primeiro Produto
                       </Button>
@@ -350,19 +376,19 @@ export function ProductsPage() {
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
                       <Button
-                        className="cursor-pointer"
                         variant="outline"
                         size="sm"
-                        onClick={() => handleEdit(product.id)}
+                        onClick={() => handleEditProduct(product)}
                         title="Editar produto"
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button
-                        className="cursor-pointer"
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDelete(product.id)}
+                        onClick={() =>
+                          handleDeleteProduct(product.id, product.name)
+                        }
                         title="Deletar produto"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -376,11 +402,18 @@ export function ProductsPage() {
         </Table>
       </div>
 
-      {/* Modal de Criação */}
+      {/* Modais */}
       <CreateProductModal
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
         onSuccess={handleProductCreated}
+      />
+
+      <UpdateProductModal
+        open={isUpdateModalOpen}
+        onOpenChange={handleCloseUpdateModal}
+        onSuccess={handleProductUpdated}
+        product={selectedProduct}
       />
     </div>
   )

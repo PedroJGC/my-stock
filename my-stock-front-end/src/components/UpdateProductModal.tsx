@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { createProduct } from '@/api/endpoints'
-import type { CreateProductData } from '@/api/types'
+import { updateProduct } from '@/api/endpoints'
+import type { Product, UpdateProductData } from '@/api/types'
 import { ProductForm } from './ProductForm'
 import {
   Dialog,
@@ -10,17 +10,19 @@ import {
   DialogTitle,
 } from './ui/dialog'
 
-interface CreateProductModalProps {
+interface UpdateProductModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
+  product?: Product | null
 }
 
-export function CreateProductModal({
+export function UpdateProductModal({
   open,
   onOpenChange,
   onSuccess,
-}: CreateProductModalProps) {
+  product,
+}: UpdateProductModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
@@ -29,23 +31,34 @@ export function CreateProductModal({
     }
   }, [open])
 
-  const handleSubmit = async (data: CreateProductData) => {
+  const handleSubmit = async (data: UpdateProductData) => {
+    if (!product) {
+      alert('Nenhum produto selecionado para edição')
+      return
+    }
+
+    // Verificar se há alterações
+    if (Object.keys(data).length === 0) {
+      alert('Nenhuma alteração foi feita')
+      return
+    }
+
     try {
       setIsSubmitting(true)
 
-      await createProduct(data)
+      await updateProduct(product.id, data)
 
       onOpenChange(false)
       onSuccess?.()
 
-      alert('Produto criado com sucesso!')
+      alert('Produto atualizado com sucesso!')
     } catch (error) {
-      console.error('Erro ao criar produto:', error)
+      console.error('Erro ao atualizar produto:', error)
 
       if (error instanceof Error) {
-        alert(`Erro ao criar produto: ${error.message}`)
+        alert(`Erro ao atualizar produto: ${error.message}`)
       } else {
-        alert('Erro desconhecido ao criar produto')
+        alert('Erro desconhecido ao atualizar produto')
       }
     } finally {
       setIsSubmitting(false)
@@ -59,18 +72,24 @@ export function CreateProductModal({
     onOpenChange(false)
   }
 
+  // Não renderizar se não houver produto
+  if (!product) {
+    return null
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-gray-400 max-w-md">
         <DialogHeader>
-          <DialogTitle>Criar Novo Produto</DialogTitle>
+          <DialogTitle>Editar Produto</DialogTitle>
           <DialogDescription>
-            Preencha as informações do produto que deseja adicionar ao estoque.
+            Atualize as informações do produto "{product.name}".
           </DialogDescription>
         </DialogHeader>
 
         <ProductForm
-          mode="create"
+          mode="update"
+          initialData={product}
           isSubmitting={isSubmitting}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
