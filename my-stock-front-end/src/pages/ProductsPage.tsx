@@ -24,22 +24,18 @@ import {
 } from '@/components/ui/table'
 
 export function ProductsPage() {
-  // Estados para produtos e loading
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Estados para modais
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
 
-  // IDs para acessibilidade
   const errorIconId = useId()
   const emptyBoxIconId = useId()
   const emptyProductsIconId = useId()
 
-  // Função para buscar produtos
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true)
@@ -61,12 +57,10 @@ export function ProductsPage() {
     }
   }, [])
 
-  // Carregar produtos na inicialização
   useEffect(() => {
     fetchProducts()
   }, [fetchProducts])
 
-  // Handlers para ações
   const handleCreateProduct = () => {
     setIsCreateModalOpen(true)
   }
@@ -88,7 +82,6 @@ export function ProductsPage() {
     try {
       await deleteProduct(productId)
 
-      // Atualização otimista - remover da lista local
       setProducts((prev) => prev.filter((p) => p.id !== productId))
 
       console.log('Produto deletado com sucesso')
@@ -101,12 +94,10 @@ export function ProductsPage() {
         alert('Erro desconhecido ao deletar produto')
       }
 
-      // Em caso de erro, recarregar a lista
       fetchProducts()
     }
   }
 
-  // Handlers para sucesso dos modais
   const handleProductCreated = () => {
     fetchProducts()
   }
@@ -116,7 +107,6 @@ export function ProductsPage() {
     setSelectedProduct(null)
   }
 
-  // Handler para fechar modal de edição
   const handleCloseUpdateModal = (open: boolean) => {
     setIsUpdateModalOpen(open)
     if (!open) {
@@ -124,7 +114,6 @@ export function ProductsPage() {
     }
   }
 
-  // Função para gerar badge de status do estoque
   const getStockBadge = (quantity: number) => {
     if (quantity === 0) {
       return (
@@ -147,7 +136,6 @@ export function ProductsPage() {
     )
   }
 
-  // Estado de loading
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center">
@@ -159,7 +147,6 @@ export function ProductsPage() {
     )
   }
 
-  // Estado de erro
   if (error) {
     return (
       <div className="p-6">
@@ -200,7 +187,6 @@ export function ProductsPage() {
     )
   }
 
-  // Renderização principal
   return (
     <div className="p-4">
       {/* Cabeçalho */}
@@ -214,7 +200,6 @@ export function ProductsPage() {
         </Button>
       </div>
 
-      {/* Cards para mobile */}
       <div className="block md:hidden space-y-4">
         {products.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
@@ -300,7 +285,6 @@ export function ProductsPage() {
         )}
       </div>
 
-      {/* Tabela para desktop */}
       <div className="hidden md:block">
         <Table>
           <TableCaption>
@@ -402,7 +386,6 @@ export function ProductsPage() {
         </Table>
       </div>
 
-      {/* Modais */}
       <CreateProductModal
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}

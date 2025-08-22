@@ -37,7 +37,6 @@ export function UpdateProductModal({
       return
     }
 
-    // Verificar se há alterações
     if (Object.keys(data).length === 0) {
       alert('Nenhuma alteração foi feita')
       return
@@ -72,7 +71,6 @@ export function UpdateProductModal({
     onOpenChange(false)
   }
 
-  // Não renderizar se não houver produto
   if (!product) {
     return null
   }

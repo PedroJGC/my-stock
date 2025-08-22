@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/correctness/useUniqueElementIds: ignore */
 /** biome-ignore-all lint/suspicious/noGlobalIsNan: ignore */
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import type { CreateProductData, Product, UpdateProductData } from '@/api/types'
@@ -9,8 +9,7 @@ import { Input, Textarea } from './Input'
 import { Label } from './Label'
 import { Button } from './ui/button'
 
-// Schema base para produtos
-const baseProductSchema = z.object({
+const createProductFormSchema = z.object({
   name: z
     .string()
     .min(3, 'O nome deve ter pelo menos 3 caracteres')
@@ -31,14 +30,10 @@ const baseProductSchema = z.object({
     .max(9999, 'Quantidade deve ser menor ou igual a 9999'),
 })
 
-// Schema para criação (todos os campos obrigatórios)
-const createProductSchema = baseProductSchema
+const updateProductFormSchema = createProductFormSchema.partial()
 
-// Schema para atualização (campos opcionais)
-const updateProductSchema = baseProductSchema.partial()
-
-type CreateFormData = z.infer<typeof createProductSchema>
-type UpdateFormData = z.infer<typeof updateProductSchema>
+type CreateFormData = z.infer<typeof createProductFormSchema>
+type UpdateFormData = z.infer<typeof updateProductFormSchema>
 
 interface ProductFormProps {
   mode: 'create' | 'update'
@@ -59,16 +54,19 @@ export function ProductForm({
   onCancel,
   submitButtonText,
 }: ProductFormProps) {
-  const currencyFormatter = new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    []
+  )
 
   const [priceInput, setPriceInput] = useState('')
 
-  // Usar diferentes tipos baseado no modo
   const createForm = useForm<CreateFormData>({
-    resolver: zodResolver(createProductSchema),
+    resolver: zodResolver(createProductFormSchema),
     defaultValues: {
       name: '',
       description: '',
@@ -78,7 +76,7 @@ export function ProductForm({
   })
 
   const updateForm = useForm<UpdateFormData>({
-    resolver: zodResolver(updateProductSchema),
+    resolver: zodResolver(updateProductFormSchema),
     defaultValues: {
       name: '',
       description: '',
@@ -98,8 +96,7 @@ export function ProductForm({
     clearErrors,
   } = form
 
-  // Efeito para popular os dados quando há dados iniciais (modo update)
-  useEffect(() => {
+  const populateInitialData = useCallback(() => {
     if (mode === 'update' && initialData) {
       setValue('name', initialData.name)
       setValue('description', initialData.description || '')
@@ -107,7 +104,6 @@ export function ProductForm({
       setValue('quantity', initialData.quantity)
       setPriceInput(currencyFormatter.format(initialData.price))
     } else if (mode === 'create') {
-      // Reset para valores padrão no modo create
       reset({
         name: '',
         description: '',
@@ -118,16 +114,24 @@ export function ProductForm({
     }
   }, [mode, initialData, setValue, reset, currencyFormatter])
 
-  // Reset quando cancelar
+  useEffect(() => {
+    populateInitialData()
+  }, [populateInitialData])
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: ignore
   useEffect(() => {
     return () => {
-      reset()
-      clearErrors()
-      setPriceInput('')
+      if (!isSubmitting) {
+        reset()
+        clearErrors()
+        setPriceInput('')
+      }
     }
   }, [reset, clearErrors])
 
   const handleFormSubmit = async (data: CreateFormData | UpdateFormData) => {
+    console.log('Form data before submit:', data) // Debug log
+
     if (mode === 'create') {
       const createData: CreateProductData = {
         name: (data as CreateFormData).name.trim(),
@@ -135,9 +139,9 @@ export function ProductForm({
         price: Number((data as CreateFormData).price),
         quantity: Number((data as CreateFormData).quantity),
       }
+      console.log('Create data:', createData)
       await (onSubmit as (data: CreateProductData) => Promise<void>)(createData)
     } else {
-      // Para update, só enviar campos que mudaram
       const updateData: UpdateProductData = {}
       const formData = data as UpdateFormData
 
@@ -155,19 +159,20 @@ export function ProductForm({
 
         if (
           formData.price !== undefined &&
-          formData.price !== initialData.price
+          Number(formData.price) !== initialData.price
         ) {
           updateData.price = Number(formData.price)
         }
 
         if (
           formData.quantity !== undefined &&
-          formData.quantity !== initialData.quantity
+          Number(formData.quantity) !== initialData.quantity
         ) {
           updateData.quantity = Number(formData.quantity)
         }
       }
 
+      console.log('Update data:', updateData) // Debug log
       await (onSubmit as (data: UpdateProductData) => Promise<void>)(updateData)
     }
   }
@@ -182,7 +187,8 @@ export function ProductForm({
     }
 
     const numberValue = Number(onlyDigits) / 100
-    setPriceInput(currencyFormatter.format(numberValue))
+    const formattedValue = currencyFormatter.format(numberValue)
+    setPriceInput(formattedValue)
     setValue('price', numberValue, { shouldValidate: true })
     clearErrors('price')
   }
@@ -251,6 +257,17 @@ export function ProductForm({
             Preço
           </Label>
           <Input
+            {...register('price', {
+              setValueAs: (value) => {
+                // Se o valor vier do priceInput customizado, pegar o valor numérico do estado
+                if (typeof value === 'string' && value.includes(',')) {
+                  const numericValue = value.replace(/\D/g, '')
+                  return numericValue === '' ? 0 : Number(numericValue) / 100
+                }
+                const num = Number.parseFloat(value)
+                return Number.isNaN(num) ? 0 : num
+              },
+            })}
             type="text"
             id="price"
             inputMode="decimal"
@@ -274,7 +291,12 @@ export function ProductForm({
             Quantidade
           </Label>
           <Input
-            {...register('quantity', { valueAsNumber: true })}
+            {...register('quantity', {
+              setValueAs: (value) => {
+                const num = Number.parseInt(value, 10)
+                return Number.isNaN(num) ? 0 : num
+              },
+            })}
             type="number"
             id="quantity"
             min="0"
@@ -283,12 +305,6 @@ export function ProductForm({
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
             placeholder="0"
             disabled={isSubmitting}
-            onChange={(e) => {
-              const value = Number.parseInt(e.target.value, 10)
-              if (!isNaN(value)) {
-                setValue('quantity', value)
-              }
-            }}
           />
           {errors.quantity && (
             <p className="mt-1 text-sm text-red-600">

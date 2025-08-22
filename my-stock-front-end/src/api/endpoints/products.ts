@@ -95,9 +95,7 @@ export async function updateProduct(
       )
     )
 
-    const cache = new Map()
-    cache.delete(createCacheKey(`${API_CONFIG.endpoints.products}/${id}`))
-    cache.delete(createCacheKey(API_CONFIG.endpoints.products))
+    clearCache()
 
     return result
   } catch (error) {
@@ -115,9 +113,7 @@ export async function deleteProduct(id: string): Promise<{ message: string }> {
       )
     )
 
-    const cache = new Map()
-    cache.delete(createCacheKey(`${API_CONFIG.endpoints.products}/${id}`))
-    cache.delete(createCacheKey(API_CONFIG.endpoints.products))
+    clearCache()
 
     return result
   } catch (error) {
