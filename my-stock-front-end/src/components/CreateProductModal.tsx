@@ -28,9 +28,6 @@ const createProductSchema = z.object({
   price: z
     .number()
     .min(0, 'O preço deve ser maior ou igual a zero')
-    .refine((val) => val !== undefined && !isNaN(val), {
-      message: 'Preço é obrigatório',
-    })
     .positive('Preço deve ser maior que zero')
     .max(999999.99, 'Preço deve ser menor que R$ 999.999,99'),
   quantity: z
@@ -74,7 +71,7 @@ export function CreateProductModal({
     defaultValues: {
       name: '',
       description: '',
-      price: 0,
+      price: undefined,
       quantity: 0,
     },
   })
@@ -83,6 +80,7 @@ export function CreateProductModal({
     if (!open) {
       reset()
       clearErrors()
+      setPriceInput('')
     }
   }, [open, reset, clearErrors])
 
@@ -106,7 +104,6 @@ export function CreateProductModal({
     } catch (error) {
       console.error('Erro ao criar produto:', error)
 
-      // Mostrar mensagem de erro (você pode substituir por um toast)
       if (error instanceof Error) {
         alert(`Erro ao criar produto: ${error.message}`)
       } else {
@@ -123,6 +120,21 @@ export function CreateProductModal({
     }
 
     onOpenChange(false)
+  }
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const onlyDigits = e.target.value.replace(/\D/g, '')
+
+    if (onlyDigits === '') {
+      setPriceInput('')
+      setValue('price', undefined as any, { shouldValidate: true })
+      return
+    }
+
+    const numberValue = Number(onlyDigits) / 100
+    setPriceInput(currencyFormatter.format(numberValue))
+    setValue('price', numberValue, { shouldValidate: true })
+    clearErrors('price')
   }
 
   return (
@@ -196,17 +208,7 @@ export function CreateProductModal({
                 placeholder="0,00"
                 disabled={isSubmitting}
                 value={priceInput}
-                onChange={(e) => {
-                  const onlyDigits = e.target.value.replace(/\D/g, '')
-                  const numberValue = Number(onlyDigits) / 100
-
-                  setPriceInput(
-                    onlyDigits ? currencyFormatter.format(numberValue) : ''
-                  )
-
-                  setValue('price', numberValue, { shouldValidate: true })
-                  clearErrors('price')
-                }}
+                onChange={handlePriceChange}
               />
               {errors.price && (
                 <p className="mt-1 text-sm text-red-600">
