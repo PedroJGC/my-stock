@@ -1,8 +1,5 @@
-// src/pages/ProductsPage.tsx - Integrada com CreateProductModal
-
 import { Edit, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useId, useState } from 'react'
-// Importar a nova API
 import {
   ApiError,
   deleteProduct,
@@ -31,12 +28,10 @@ export function ProductsPage() {
   const [error, setError] = useState<string | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
-  // Gerar IDs únicos para acessibilidade
   const errorIconId = useId()
   const emptyBoxIconId = useId()
   const emptyProductsIconId = useId()
 
-  // Buscar produtos da API
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true)
@@ -58,12 +53,10 @@ export function ProductsPage() {
     }
   }, [])
 
-  // Carregar produtos no mount do componente
   useEffect(() => {
     fetchProducts()
   }, [fetchProducts])
 
-  // Função para editar produto
   function handleEdit(productId: string) {
     console.log('Editar produto:', productId)
     // TODO: Implementar modal de edição
@@ -95,18 +88,23 @@ export function ProductsPage() {
     }
   }
 
-  // Função para abrir modal de criação
   function handleAddProduct() {
     setIsCreateModalOpen(true)
   }
 
-  // Função chamada quando produto é criado com sucesso
-  function handleProductCreated() {
-    // Recarregar a lista de produtos
-    fetchProducts()
+  async function handleProductCreated() {
+    try {
+      setLoading(true)
+      const data = await getAllProducts()
+      setProducts(data)
+    } catch (err) {
+      console.error('Erro ao recarregar produtos após criação:', err)
+      fetchProducts()
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // Função para obter badge de status do estoque
   function getStockBadge(quantity: number) {
     if (quantity === 0) {
       return (
@@ -129,7 +127,6 @@ export function ProductsPage() {
     )
   }
 
-  // Renderização de loading
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center">
@@ -141,7 +138,6 @@ export function ProductsPage() {
     )
   }
 
-  // Renderização de erro
   if (error) {
     return (
       <div className="p-6">

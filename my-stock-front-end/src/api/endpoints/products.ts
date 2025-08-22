@@ -8,6 +8,7 @@ import type {
   UpdateProductData,
 } from '../types'
 import {
+  clearCache,
   createCacheKey,
   getFromCache,
   saveToCache,
@@ -68,9 +69,7 @@ export async function createProduct(
       apiClient.post<{ message: string }>(API_CONFIG.endpoints.products, data)
     )
 
-    const cacheKey = createCacheKey(API_CONFIG.endpoints.products)
-    const cache = new Map()
-    cache.delete(cacheKey)
+    clearCache()
 
     return result
   } catch (error) {
